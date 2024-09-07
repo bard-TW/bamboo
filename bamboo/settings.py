@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'fugle',
 ]
 
 MIDDLEWARE = [
@@ -138,12 +139,13 @@ LOGGING = {
     "disable_existing_loggers": False,
     'formatters': {
         'standard': {
-            'format': '%(asctime)s [%(levelname)s][%(name)s:%(lineno)d] - %(message)s'
+            'format': '%(asctime)s [%(levelname)s][%(filename)s:%(lineno)d] %(message)s'
         },
     },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
+            'formatter': 'standard',
         },
         'file': {
             'class': 'logging.handlers.RotatingFileHandler',

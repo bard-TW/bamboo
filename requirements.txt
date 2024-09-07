@@ -1,1 +1,2 @@
 Django==5.1.1
+fugle-marketdata==2.2.0
