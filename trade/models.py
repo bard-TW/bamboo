@@ -7,7 +7,11 @@ from django.utils import timezone
 class BasicCompanyInformation(models.Model):
     stk_no = models.CharField(max_length=10, verbose_name='股票代號')
     stk_na = models.CharField(max_length=50, verbose_name='股票名稱')
-
+    stk_ab = models.CharField(max_length=50, verbose_name='簡稱')
+    establishment_date = models.CharField(max_length=8, verbose_name='成立日期')
+    listing_Date = models.CharField(max_length=8, verbose_name='上市日期')
+    stk_ps = models.IntegerField(verbose_name='特別股數')
+    stk_cs = models.IntegerField(verbose_name='普通股數')
     class Meta:
         db_table = 'basic_company_information'
         verbose_name = '公司基本資訊'
