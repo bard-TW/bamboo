@@ -164,3 +164,4 @@ cython_debug/
 
 config.ini
 .information/
+.vscode
