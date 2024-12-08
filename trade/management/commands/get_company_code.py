@@ -1,14 +1,11 @@
+import json
 import logging
 
-from django.core.management.base import BaseCommand
-from fugle_marketdata import RestClient, WebSocketClient
-from configparser import ConfigParser
-from fugle_trade.sdk import SDK
-from fugle_trade.order import OrderObject
-from fugle_trade.constant import (APCode, Trade, PriceFlag, BSFlag, Action)
 import requests
-import json
+from django.core.management.base import BaseCommand
+
 from trade.models import BasicCompanyInformation
+
 logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
