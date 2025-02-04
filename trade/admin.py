@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from trade.models import BasicCompanyInformation, TradeDetails, TradeSummary
 
+from trade.enum import BuySellEnum
 # Register your models here.
 
 @admin.register(BasicCompanyInformation)
@@ -13,6 +14,49 @@ class BasicCompanyInformationAdmin(admin.ModelAdmin):
 @admin.register(TradeDetails)
 class TradeDetailsAdmin(admin.ModelAdmin):
     list_display = ('order_no', 'buy_sell', 't_date', 'stk_no_id', 'price', 'qty', 'qty_price', 'fee', 'tax', 'note', 'funds_invested', 'funds_remaining', 'shares', 'price_avg', 'hold_qty_price')
+    search_fields = ['stk_no_id__stk_no']  # 搜尋條件
+    actions = ['update_result']
+
+    @admin.action(description='更新此筆後相同股票的持有結果')
+    def update_result(self, request, queryset):
+        # 成交日期，當天可能會有多筆 前1天也有很多筆 如何判斷最後一筆
+        details_qs = TradeDetails.objects.filter(stk_no_id=queryset[0].stk_no_id, t_date__gte=queryset[0].t_date).order_by('t_date')
+        if len(details_qs) < 1:
+            print('沒有資料')
+            return
+
+        funds_remaining = details_qs[0].funds_remaining
+        shares = details_qs[0].shares
+        print(shares)
+        price_avg = details_qs[0].price_avg
+        hold_qty_price = details_qs[0].hold_qty_price
+
+        # TODO 測試結果有無問題
+
+        for detail in details_qs[1:]:
+            print(detail.t_date)
+
+            if BuySellEnum(detail.buy_sell) == BuySellEnum.SELL:
+                funds_remaining += (detail.qty_price-detail.fee-detail.tax)
+                shares -= detail.qty
+                hold_qty_price -= detail.qty*price_avg
+
+            elif BuySellEnum(detail.buy_sell) == BuySellEnum.BUY:
+                funds_remaining -= (detail.qty_price-detail.fee-detail.tax) # 總花費
+                shares += detail.qty
+                hold_qty_price += detail.qty_price
+                price_avg = round(hold_qty_price/shares, 2)
+                pass
+
+            detail.funds_remaining = funds_remaining
+            detail.shares = shares
+            detail.price_avg = price_avg
+            detail.hold_qty_price = hold_qty_price
+            detail.save()
+
+
+        # stk_no_id
+        # t_date
 
 
 @admin.register(TradeSummary)

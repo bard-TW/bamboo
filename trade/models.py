@@ -3,8 +3,6 @@ from django.utils import timezone
 from trade.enum import BuySellEnum
 # Create your models here.
 
-
-
 class BasicCompanyInformation(models.Model):
     stk_no = models.CharField(max_length=10, verbose_name='股票代號')
     stk_na = models.CharField(max_length=50, verbose_name='股票名稱')
@@ -34,6 +32,7 @@ class TradeDetails(models.Model):
     order_no = models.CharField(max_length=20, verbose_name='委託單號')
     buy_sell = models.CharField(max_length=1, choices=BuySellEnum.choices(), verbose_name='買賣')
     t_date = models.DateField(default=timezone.now, verbose_name='成交日期')
+    # t_time = models.TimeField(default=timezone.now, verbose_name='成交時間')
     stk_no_id = models.ForeignKey(BasicCompanyInformation, on_delete=models.CASCADE, verbose_name='股票代號')
     price = models.FloatField(default=0, verbose_name='成交價格')
     qty = models.IntegerField(default=0, verbose_name='成交數量')

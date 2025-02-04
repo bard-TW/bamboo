@@ -100,6 +100,7 @@ class Command(BaseCommand):
             'fee': fee,
             'tax': tax,
             'note': mat_data['user_def'],
+
             'funds_invested': funds_invested,
             'funds_remaining': funds_remaining,
             'shares': shares,
