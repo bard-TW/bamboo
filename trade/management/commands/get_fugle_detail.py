@@ -12,21 +12,25 @@ from trade.enum import BuySellEnum
 import datetime
 logger = logging.getLogger(__name__)
 
-# TODO 抓取富果交易明細與總覽
-
 class Command(BaseCommand):
-    '''測試'''
+    '''使用富果API取得交易明細'''
     help = '測試'
 
     def add_arguments(self, parser):
         parser.add_argument(
-                '--type',
+                '--start_date',
                 dest='type',
-                default=1,
+                default='2024-11-01',
                 type=int,
-                help='''無作用'''
+                help='''輸入查詢起始日期 ex: 2024-11-01'''
             )
-
+        parser.add_argument(
+                '--end_date',
+                dest='type',
+                default='2024-12-08',
+                type=int,
+                help='''輸入查詢結束日期 ex: 2024-12-08'''
+            )
     def handle(self, *args, **options):
         logger.info('')
         # 讀取設定檔
