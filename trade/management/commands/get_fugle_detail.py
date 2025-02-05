@@ -14,21 +14,21 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     '''使用富果API取得交易明細'''
-    help = '測試'
+    help = '使用富果API取得交易明細'
 
     def add_arguments(self, parser):
         parser.add_argument(
                 '--start_date',
-                dest='type',
+                dest='start_date',
                 default='2024-11-01',
-                type=int,
+                type=str,
                 help='''輸入查詢起始日期 ex: 2024-11-01'''
             )
         parser.add_argument(
                 '--end_date',
-                dest='type',
+                dest='end_date',
                 default='2024-12-08',
-                type=int,
+                type=str,
                 help='''輸入查詢結束日期 ex: 2024-12-08'''
             )
     def handle(self, *args, **options):
@@ -41,7 +41,7 @@ class Command(BaseCommand):
         sdk.login()
 
         # 取得交易明細 >> 並計算總額
-        transactions_by_date = sdk.get_transactions_by_date("2024-11-01", "2024-12-08")
+        transactions_by_date = sdk.get_transactions_by_date(options['start_date'], options['end_date'])
 
         for x in transactions_by_date:
             for y in x['mat_dats']:
