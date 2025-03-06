@@ -1,3 +1,4 @@
 Django==5.1.5
 fugle-marketdata
 fugle-trade
+pandas
