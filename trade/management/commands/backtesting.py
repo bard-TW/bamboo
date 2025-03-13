@@ -6,10 +6,14 @@ import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from fugle_marketdata import RestClient
+
 from trade.models import BasicCompanyInformation
 
+
 class Backtesting:
-    def __init__(self):
+    def __init__(self, symbol='0000', base_price=22.2, base_funds=200000):
+        self.base_funds = base_funds
+        self.symbol = symbol
         self.backtesting_df = pd.DataFrame({ # 儲存回測交易資訊
             'datetime': [], # 買賣時間
             'type': [], # 買賣類型 buy, sell
@@ -35,9 +39,9 @@ class Backtesting:
             'tax': 0,
             'remark': '',
             'total_cost': 0,
-            'remaining_funds': 200000,
+            'remaining_funds': base_funds,
             'hold_stock': 0,
-            'hold_stock_avg_price': 22.2,
+            'hold_stock_avg_price': base_price,
             'status': 0
         }
 
@@ -56,7 +60,6 @@ class Backtesting:
         if previous_df['remaining_funds'] < shares_num * buy_price:
             shares_num = 0
             status = 0
-
 
         # 買進手續費
         pay = int(shares_num * buy_price * 0.001425)
@@ -141,7 +144,16 @@ class Backtesting:
         }
 
     def export_csv(self):
-        self.backtesting_df.to_csv('backtesting.csv', index=False)
+        self.backtesting_df.to_csv(f'{self.symbol} backtesting.csv', index=False, encoding='BIG5')
+
+    def calculate(self):
+        # 計算獲利
+        last_data = self.backtesting_df.loc[len(self.backtesting_df)-1]
+
+        print('初始本金:', self.base_funds)
+        print('股票現值:', last_data['hold_stock'] * last_data['stock_price'])
+        print('剩餘本金:', last_data['total_cost'])
+        print('純利:', last_data['hold_stock'] * last_data['stock_price'] + last_data['total_cost'] - self.base_funds)
 
 
 class Command(BaseCommand):
@@ -158,12 +170,12 @@ class Command(BaseCommand):
             )
 
     def handle(self, *args, **options):
-        # API_KEY = settings.FUGLE_API_KEY
-        # symbol = '0050' # 股票代號
+        API_KEY = settings.FUGLE_API_KEY
+        symbol = '2610' # 股票代號
 
+        # 取得歷史資料 ---------------------
         # client = RestClient(api_key=API_KEY)
         # stock = client.stock
-
         # candles_list = []
         # for y in range(2021, 2026):
         #     start_date = str(y) + "-01-01"
@@ -177,19 +189,21 @@ class Command(BaseCommand):
         #     }
         #     historical_data = stock.historical.candles(**history_options)
         #     candles_list = candles_list + historical_data['data']
-
         # df = pd.DataFrame(candles_list).sort_values('date')
         # df = df.reset_index().drop('index', axis=1)
+        # df.to_csv(f'{symbol}.csv', index=False)
 
-        # df.to_csv('0050.csv', index=False)
-        df = pd.read_csv('0050.csv')
-        backtesting = Backtesting()
+
+        df = pd.read_csv(f'{symbol}.csv')
+        backtesting = Backtesting(symbol=symbol, base_price=22.2, base_funds=200000)
+        # 單筆交易金額
+        price = 1000
 
         # 基準值、容許波動區間、最高成本、停利不停損、買賣依固定金額
         # 不同策略切換可以無痛銜接
         # 過去一年穩定波動 策略1: 網格交易策略，壓低持有價格策略
 
-        #? 定期不定額持續買進，低於85%投入增加140%，高於115%投入增加60%，區間投入增加100%，150% 慢慢出清(人工) 停利不停損
+        #? 定期不定額持續買進，低於85%投入增加140%，高於115%投入增加60%，區間投入增加100%，150% 慢慢出清(人工) 停利不停損 有交易等一周
 
         # df['12MA'] = df['open'].rolling(window=12).mean()
         # df['26MA'] = df['open'].rolling(window=26).mean()
@@ -199,11 +213,29 @@ class Command(BaseCommand):
         # df['RSI'] = self.calculate_rsi(df)
         # print(df)
 
-        for x in df.itertuples(index=True, name='Person'):
-            backtesting.buy(x.date, x.open, 1000)
+        space = 0
+        for row in df.itertuples(index=True, name='Person'):
+            avg_price = backtesting.backtesting_df.loc[len(backtesting.backtesting_df)-1, 'hold_stock_avg_price']
+            if space > 0:
+                space -= 1
+                continue
+            if row.open < avg_price * 0.85:
+                backtesting.buy(row.date, row.open, price*1.4, '低於85%投入140%')
+                space = 5
+            elif row.open > avg_price * 1.15:
+                backtesting.buy(row.date, row.open, price*0.6, '高於115%投入60%')
+                space = 5
+            elif row.open < avg_price * 1.15 and row.open > avg_price * 0.85:
+                backtesting.buy(row.date, row.open, price, '區間投入100%')
+                space = 5
 
+            elif row.open > avg_price * 1.5:
+                answer = input('1賣出 0不賣出: ')
+                if answer == '1':
+                    backtesting.sell(row.date, row.open, price*1.5, '150% 慢慢出清(人工)')
+                space = 5
         backtesting.export_csv()
-
+        backtesting.calculate()
 
 
     def calculate_rsi(self, df, period=14):
